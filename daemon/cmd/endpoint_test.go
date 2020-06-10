@@ -30,6 +30,7 @@ import (
 	"github.com/cilium/cilium/pkg/labels"
 	"github.com/cilium/cilium/pkg/metrics"
 	"github.com/cilium/cilium/pkg/testutils"
+	"github.com/cilium/cilium/test/helpers"
 
 	. "gopkg.in/check.v1"
 )
@@ -152,7 +153,7 @@ func assertOnMetric(c *C, state string, expected int64) {
 		obtained := getMetricValue(state)
 		obtainedValues[obtained] = struct{}{}
 		return obtained == expected
-	}, 10*time.Second)
+	}, helpers.HelperTimeout)
 	if err != nil {
 		// We are printing the map here to show every unique obtained metrics
 		// value because these values change rapidly and it may be misleading
