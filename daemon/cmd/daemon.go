@@ -655,9 +655,9 @@ func NewDaemon(ctx context.Context, epMgr *endpointmanager.EndpointManager, dp d
 	// well known identities have already been initialized above.
 	// Ignore the channel returned by this function, as we want the global
 	// identity allocator to run asynchronously.
-	d.identityAllocator.InitIdentityAllocator(k8s.CiliumClient(), nil)
+	// d.identityAllocator.InitIdentityAllocator(k8s.CiliumClient(), nil)
 
-	d.bootstrapClusterMesh(nodeMngr)
+	// d.bootstrapClusterMesh(nodeMngr)
 
 	bootstrapStats.bpfBase.Start()
 	err = d.init()
