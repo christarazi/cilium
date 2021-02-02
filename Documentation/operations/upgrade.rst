@@ -349,6 +349,10 @@ Annotations:
   behaviour.
 * Helm option ``serviceAccounts.certgen`` is removed, please use ``serviceAccounts.clustermeshcertgen``
   for Clustermesh certificate generation and ``serviceAccounts.hubblecertgen`` for Hubble certificate generation.
+* For AWS ENI IPAM mode, Cilium has changed the ``first-interface-index``
+  default from ``1`` to ``0``. Existing nodes in the cluster will continue to
+  use ``1`` and new nodes will use ``0``. In order to stay with Cilium's
+  current behavior, set the value to ``1`` in the CiliumNode resource.
 
 Removed Metrics/Labels
 ~~~~~~~~~~~~~~~~~~~~~~
