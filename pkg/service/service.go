@@ -46,7 +46,7 @@ var (
 // LBMap is the interface describing methods for manipulating service maps.
 type LBMap interface {
 	UpsertService(*lbmap.UpsertServiceParams) error
-	UpsertMaglevLookupTable(uint16, map[string]uint16, bool) error
+	UpsertMaglevLookupTable(uint16, map[string]uint16, bool, uint64) error
 	IsMaglevLookupTableRecreated(bool) bool
 	DeleteService(lb.L3n4AddrID, int, bool) error
 	AddBackend(uint16, net.IP, uint16, bool) error
@@ -726,6 +726,7 @@ func (s *Service) upsertServiceIntoLBMaps(svc *svcInfo, onlyLocalBackends bool,
 		SessionAffinityTimeoutSec: svc.SessionAffinityTimeoutSec,
 		CheckSourceRange:          checkLBSrcRange,
 		UseMaglev:                 svc.useMaglev(),
+		MaglevTableSize:           svc.MaglevTableSize,
 	}
 	if err := s.lbmap.UpsertService(p); err != nil {
 		return err
@@ -837,7 +838,12 @@ func (s *Service) restoreServicesLocked() error {
 			for _, b := range newSVC.Backends {
 				backends[b.String()] = uint16(b.ID)
 			}
-			if err := s.lbmap.UpsertMaglevLookupTable(uint16(newSVC.Frontend.ID), backends, ipv6); err != nil {
+			if err := s.lbmap.UpsertMaglevLookupTable(
+				uint16(newSVC.Frontend.ID),
+				backends,
+				ipv6,
+				newSVC.MaglevTableSize,
+			); err != nil {
 				return err
 			}
 		}

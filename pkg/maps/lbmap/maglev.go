@@ -128,7 +128,7 @@ func newInnerMaglevMap(name string) *bpf.Map {
 		name,
 		bpf.MapTypeArray,
 		&MaglevInnerKey{}, int(unsafe.Sizeof(MaglevInnerKey{})),
-		&MaglevInnerVal{}, int(unsafe.Sizeof(uint16(0)))*option.Config.MaglevTableSize,
+		&MaglevInnerVal{}, int(unsafe.Sizeof(uint16(0))*uintptr(option.Config.MaglevTableSize)),
 		1, 0, 0,
 		bpf.ConvertKeyValue,
 		&bpf.NewMapOpts{},
