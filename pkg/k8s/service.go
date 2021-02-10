@@ -35,20 +35,24 @@ import (
 	v1 "k8s.io/api/core/v1"
 )
 
-func getAnnotationIncludeExternal(svc *slim_corev1.Service) bool {
-	if value, ok := svc.ObjectMeta.Annotations[annotation.GlobalService]; ok {
-		return strings.ToLower(value) == "true"
+func getAnnotationRaw(key string, svc *slim_corev1.Service) string {
+	if value, ok := svc.ObjectMeta.Annotations[key]; ok {
+		return strings.ToLower(value)
 	}
 
-	return false
+	return ""
+}
+
+func getAnnotationIncludeExternal(svc *slim_corev1.Service) bool {
+	return getAnnotationRaw(annotation.GlobalService, svc) == "true"
 }
 
 func getAnnotationShared(svc *slim_corev1.Service) bool {
-	if value, ok := svc.ObjectMeta.Annotations[annotation.SharedService]; ok {
-		return strings.ToLower(value) == "true"
+	shared := getAnnotationRaw(annotation.SharedService, svc)
+	if shared == "false" {
+		return false
 	}
-
-	return getAnnotationIncludeExternal(svc)
+	return shared == "true" || getAnnotationIncludeExternal(svc)
 }
 
 // ParseServiceID parses a Kubernetes service and returns the ServiceID
