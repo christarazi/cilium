@@ -70,4 +70,9 @@ const (
 	// that we should bypass kernel conntrack for a given pod. This applies for
 	// both TCP and UDP connection. Current use case is NodeLocalDNS.
 	NoTrack = Prefix + ".no-track-port"
+
+	// MaglevTableSize is the annotation name used to store the Maglev table
+	// size per service. This is used only when NodePortAlg ==
+	// NodePortAlgMaglev.
+	MaglevTableSize = Prefix + "/maglev-table-size"
 )
