@@ -104,10 +104,10 @@ func (m *ManagerTestSuite) TestUpsertAndDeleteService(c *C) {
 	c.Assert(id1, Equals, lb.ID(1))
 	c.Assert(len(m.lbmap.ServiceByID[uint16(id1)].Backends), Equals, 2)
 	c.Assert(len(m.lbmap.BackendByID), Equals, 2)
-	c.Assert(m.svc.svcByID[id1].svcName, Equals, "svc1")
-	c.Assert(m.svc.svcByID[id1].svcNamespace, Equals, "ns1")
-	c.Assert(m.svc.svcByID[id1].sessionAffinity, Equals, true)
-	c.Assert(m.svc.svcByID[id1].sessionAffinityTimeoutSec, Equals, uint32(100))
+	c.Assert(m.svc.svcByID[id1].Name, Equals, "svc1")
+	c.Assert(m.svc.svcByID[id1].Namespace, Equals, "ns1")
+	c.Assert(m.svc.svcByID[id1].SessionAffinity, Equals, true)
+	c.Assert(m.svc.svcByID[id1].SessionAffinityTimeoutSec, Equals, uint32(100))
 	c.Assert(m.lbmap.ServiceByID[uint16(id1)].SessionAffinity, Equals, true)
 	c.Assert(m.lbmap.ServiceByID[uint16(id1)].SessionAffinityTimeoutSec, Equals, uint32(100))
 	c.Assert(len(m.lbmap.AffinityMatch[uint16(id1)]), Equals, 2)
@@ -123,13 +123,13 @@ func (m *ManagerTestSuite) TestUpsertAndDeleteService(c *C) {
 	c.Assert(id1, Equals, lb.ID(1))
 	c.Assert(len(m.lbmap.ServiceByID[uint16(id1)].Backends), Equals, 2)
 	c.Assert(len(m.lbmap.BackendByID), Equals, 2)
-	c.Assert(m.svc.svcByID[id1].svcName, Equals, "svc1")
-	c.Assert(m.svc.svcByID[id1].svcNamespace, Equals, "ns1")
+	c.Assert(m.svc.svcByID[id1].Name, Equals, "svc1")
+	c.Assert(m.svc.svcByID[id1].Namespace, Equals, "ns1")
 	c.Assert(len(m.lbmap.AffinityMatch[uint16(id1)]), Equals, 0)
-	c.Assert(m.svc.svcByID[id1].sessionAffinity, Equals, false)
+	c.Assert(m.svc.svcByID[id1].SessionAffinity, Equals, false)
 	c.Assert(m.lbmap.ServiceByID[uint16(id1)].SessionAffinity, Equals, false)
 	// TODO(brb) test that backends are the same
-	// TODO(brb) check that .backends =~ .backendsByHash
+	// TODO(brb) check that .Backends =~ .backendsByHash
 
 	// Should remove one backend and enable session affinity
 	p.Backends = backends1[0:1]
@@ -141,10 +141,10 @@ func (m *ManagerTestSuite) TestUpsertAndDeleteService(c *C) {
 	c.Assert(id1, Equals, lb.ID(1))
 	c.Assert(len(m.lbmap.ServiceByID[uint16(id1)].Backends), Equals, 1)
 	c.Assert(len(m.lbmap.BackendByID), Equals, 1)
-	c.Assert(m.svc.svcByID[id1].svcName, Equals, "svc1")
-	c.Assert(m.svc.svcByID[id1].svcNamespace, Equals, "ns1")
-	c.Assert(m.svc.svcByID[id1].sessionAffinity, Equals, true)
-	c.Assert(m.svc.svcByID[id1].sessionAffinityTimeoutSec, Equals, uint32(200))
+	c.Assert(m.svc.svcByID[id1].Name, Equals, "svc1")
+	c.Assert(m.svc.svcByID[id1].Namespace, Equals, "ns1")
+	c.Assert(m.svc.svcByID[id1].SessionAffinity, Equals, true)
+	c.Assert(m.svc.svcByID[id1].SessionAffinityTimeoutSec, Equals, uint32(200))
 	c.Assert(len(m.lbmap.AffinityMatch[uint16(id1)]), Equals, 1)
 	for bID := range m.lbmap.BackendByID {
 		c.Assert(m.lbmap.AffinityMatch[uint16(id1)][bID], Equals, struct{}{})
@@ -173,8 +173,8 @@ func (m *ManagerTestSuite) TestUpsertAndDeleteService(c *C) {
 	c.Assert(id2, Equals, lb.ID(2))
 	c.Assert(len(m.lbmap.ServiceByID[uint16(id2)].Backends), Equals, 2)
 	c.Assert(len(m.lbmap.BackendByID), Equals, 2)
-	c.Assert(m.svc.svcByID[id2].svcName, Equals, "svc2")
-	c.Assert(m.svc.svcByID[id2].svcNamespace, Equals, "ns2")
+	c.Assert(m.svc.svcByID[id2].Name, Equals, "svc2")
+	c.Assert(m.svc.svcByID[id2].Namespace, Equals, "ns2")
 	c.Assert(len(m.lbmap.AffinityMatch[uint16(id2)]), Equals, 2)
 	c.Assert(len(m.lbmap.SourceRanges[uint16(id2)]), Equals, 2)
 
@@ -196,8 +196,8 @@ func (m *ManagerTestSuite) TestUpsertAndDeleteService(c *C) {
 	c.Assert(id2, Equals, lb.ID(2))
 	c.Assert(len(m.lbmap.ServiceByID[uint16(id2)].Backends), Equals, 0)
 	c.Assert(len(m.lbmap.BackendByID), Equals, 0)
-	c.Assert(m.svc.svcByID[id2].svcName, Equals, "svc2")
-	c.Assert(m.svc.svcByID[id2].svcNamespace, Equals, "ns2")
+	c.Assert(m.svc.svcByID[id2].Name, Equals, "svc2")
+	c.Assert(m.svc.svcByID[id2].Namespace, Equals, "ns2")
 	c.Assert(len(m.lbmap.AffinityMatch[uint16(id2)]), Equals, 0)
 	c.Assert(len(m.lbmap.SourceRanges[uint16(id2)]), Equals, 1)
 
@@ -261,21 +261,21 @@ func (m *ManagerTestSuite) TestRestoreServices(c *C) {
 
 	// Services have been restored too
 	c.Assert(len(m.svc.svcByID), Equals, 2)
-	c.Assert(m.svc.svcByID[id1].frontend, checker.DeepEquals, lbmap.ServiceByID[uint16(id1)].Frontend)
-	c.Assert(m.svc.svcByID[id1].backends, checker.DeepEquals, lbmap.ServiceByID[uint16(id1)].Backends)
-	c.Assert(m.svc.svcByID[id2].frontend, checker.DeepEquals, lbmap.ServiceByID[uint16(id2)].Frontend)
-	c.Assert(m.svc.svcByID[id2].backends, checker.DeepEquals, lbmap.ServiceByID[uint16(id2)].Backends)
+	c.Assert(m.svc.svcByID[id1].Frontend, checker.DeepEquals, lbmap.ServiceByID[uint16(id1)].Frontend)
+	c.Assert(m.svc.svcByID[id1].Backends, checker.DeepEquals, lbmap.ServiceByID[uint16(id1)].Backends)
+	c.Assert(m.svc.svcByID[id2].Frontend, checker.DeepEquals, lbmap.ServiceByID[uint16(id2)].Frontend)
+	c.Assert(m.svc.svcByID[id2].Backends, checker.DeepEquals, lbmap.ServiceByID[uint16(id2)].Backends)
 
 	// Session affinity too
-	c.Assert(m.svc.svcByID[id1].sessionAffinity, Equals, false)
-	c.Assert(m.svc.svcByID[id2].sessionAffinity, Equals, true)
-	c.Assert(m.svc.svcByID[id2].sessionAffinityTimeoutSec, Equals, uint32(200))
+	c.Assert(m.svc.svcByID[id1].SessionAffinity, Equals, false)
+	c.Assert(m.svc.svcByID[id2].SessionAffinity, Equals, true)
+	c.Assert(m.svc.svcByID[id2].SessionAffinityTimeoutSec, Equals, uint32(200))
 
 	// LoadBalancer source ranges too
-	c.Assert(len(m.svc.svcByID[id2].loadBalancerSourceRanges), Equals, 2)
+	c.Assert(len(m.svc.svcByID[id2].LoadBalancerSourceRanges), Equals, 2)
 	for _, cidr := range []*cidr.CIDR{cidr1, cidr2} {
 		found := false
-		for _, c := range m.svc.svcByID[id2].loadBalancerSourceRanges {
+		for _, c := range m.svc.svcByID[id2].LoadBalancerSourceRanges {
 			if c.String() == cidr.String() {
 				found = true
 				break
@@ -346,8 +346,8 @@ func (m *ManagerTestSuite) TestSyncWithK8sFinished(c *C) {
 	c.Assert(len(m.svc.svcByID), Equals, 1)
 	_, found := m.svc.svcByID[id2]
 	c.Assert(found, Equals, true)
-	c.Assert(m.svc.svcByID[id2].svcName, Equals, "svc2")
-	c.Assert(m.svc.svcByID[id2].svcNamespace, Equals, "ns2")
+	c.Assert(m.svc.svcByID[id2].Name, Equals, "svc2")
+	c.Assert(m.svc.svcByID[id2].Namespace, Equals, "ns2")
 	c.Assert(len(m.lbmap.AffinityMatch), Equals, 0)
 }
 
@@ -571,14 +571,14 @@ func (m *ManagerTestSuite) TestLocalRedirectLocalBackendSelection(c *C) {
 
 	svc, ok := m.svc.svcByID[id]
 	c.Assert(ok, Equals, true)
-	c.Assert(svc.svcNamespace, Equals, "ns1")
-	c.Assert(svc.svcName, Equals, "svc1")
+	c.Assert(svc.Namespace, Equals, "ns1")
+	c.Assert(svc.Name, Equals, "svc1")
 	// Only node-local backends are selected
-	c.Assert(len(svc.backends), Equals, len(localBackends))
+	c.Assert(len(svc.Backends), Equals, len(localBackends))
 
 	svcFromLbMap, ok := m.lbmap.ServiceByID[uint16(id)]
 	c.Assert(ok, Equals, true)
-	c.Assert(len(svcFromLbMap.Backends), Equals, len(svc.backends))
+	c.Assert(len(svcFromLbMap.Backends), Equals, len(svc.Backends))
 }
 
 // Local redirect service should be able to override a ClusterIP service with same
@@ -615,7 +615,7 @@ func (m *ManagerTestSuite) TestLocalRedirectServiceOverride(c *C) {
 	c.Assert(id, Not(Equals), lb.ID(0))
 
 	svc, ok := m.svc.svcByID[id]
-	c.Assert(len(svc.backends), Equals, len(allBackends))
+	c.Assert(len(svc.Backends), Equals, len(allBackends))
 	c.Assert(ok, Equals, true)
 
 	// Insert the service entry of type Local Redirect.
@@ -628,7 +628,7 @@ func (m *ManagerTestSuite) TestLocalRedirectServiceOverride(c *C) {
 	c.Assert(id, Not(Equals), lb.ID(0))
 	svc, _ = m.svc.svcByID[id]
 	// Only node-local backends are selected.
-	c.Assert(len(svc.backends), Equals, len(localBackends))
+	c.Assert(len(svc.Backends), Equals, len(localBackends))
 
 	// Insert the service entry of type ClusterIP.
 	p1.Type = lb.SVCTypeClusterIP
@@ -653,7 +653,7 @@ func (m *ManagerTestSuite) TestLocalRedirectServiceOverride(c *C) {
 	c.Assert(id, Not(Equals), lb.ID(0))
 
 	svc, ok = m.svc.svcByID[id]
-	c.Assert(len(svc.backends), Equals, len(allBackends))
+	c.Assert(len(svc.Backends), Equals, len(allBackends))
 	c.Assert(ok, Equals, true)
 
 	// Insert the service entry of type Local Redirect.
