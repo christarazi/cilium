@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"net"
 	"net/url"
+	"strconv"
 	"strings"
 	"time"
 
@@ -133,6 +134,15 @@ func ParseService(svc *slim_corev1.Service, nodeAddressing datapath.NodeAddressi
 		svc.GetNamespace(), svcType)
 	svcInfo.IncludeExternal = getAnnotationIncludeExternal(svc)
 	svcInfo.Shared = getAnnotationShared(svc)
+	if s := getAnnotationRaw(annotation.MaglevTableSize, svc); s != "" {
+		if t, err := strconv.ParseUint(s, 10, 64); err != nil {
+			scopedLog.WithField(
+				logfields.Annotations, annotation.MaglevTableSize,
+			).WithError(err).Warn("Ignoring k8s service annotation due to error in parsing, falling back to default")
+		} else {
+			svcInfo.MaglevTableSize = t
+		}
+	}
 
 	if svc.Spec.SessionAffinity == slim_corev1.ServiceAffinityClientIP {
 		svcInfo.SessionAffinity = true
@@ -289,6 +299,10 @@ type Service struct {
 
 	// Type is the internal service type
 	Type loadbalancer.SVCType
+
+	// MaglevTableSize is the size of the maglev lookup table. This is used
+	// when NodePortAlg == NodePortAlgMaglev.
+	MaglevTableSize uint64
 }
 
 // String returns the string representation of a service resource
