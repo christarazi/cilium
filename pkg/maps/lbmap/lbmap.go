@@ -46,15 +46,15 @@ type LBBPFMap struct {
 	// IDs. Concurrent access is protected by the
 	// pkg/service.go:(Service).UpsertService() lock.
 	maglevBackendIDsBuffer []uint16
-	maglevTableSize        uint64
+	defaultMaglevTableSize uint64
 }
 
-func New(maglev bool, maglevTableSize int) *LBBPFMap {
+func New(maglev bool, size int) *LBBPFMap {
 	m := &LBBPFMap{}
 
 	if maglev {
-		m.maglevBackendIDsBuffer = make([]uint16, maglevTableSize)
-		m.maglevTableSize = uint64(maglevTableSize)
+		m.maglevBackendIDsBuffer = make([]uint16, size)
+		m.defaultMaglevTableSize = uint64(size)
 	}
 
 	return m
