@@ -141,9 +141,19 @@ func (lbmap *LBBPFMap) UpsertService(p *UpsertServiceParams) error {
 		return fmt.Errorf("Unable to update reverse NAT %+v => %+v: %s", revNATKey, revNATValue, err)
 	}
 
-	if err := updateMasterService(svcKey, len(backendIDs), int(p.ID), p.Type, p.Local,
-		p.SessionAffinity, p.SessionAffinityTimeoutSec, p.CheckSourceRange); err != nil {
-
+	if err := updateMasterService(
+		svcKey,
+		len(backendIDs),
+		int(p.ID),
+		p.SessionAffinityTimeoutSec,
+		loadbalancer.SvcFlagParam{
+			SvcType:          p.Type,
+			SvcLocal:         p.Local,
+			SessionAffinity:  p.SessionAffinity,
+			IsRoutable:       !svcKey.IsSurrogate(),
+			CheckSourceRange: p.CheckSourceRange,
+		},
+	); err != nil {
 		deleteRevNatLocked(revNATKey)
 		return fmt.Errorf("Unable to update service %+v: %s", svcKey, err)
 	}
@@ -519,23 +529,18 @@ func (*LBBPFMap) IsMaglevLookupTableRecreated(ipv6 bool) bool {
 	return maglevRecreatedIPv4
 }
 
-func updateMasterService(fe ServiceKey, nbackends int, revNATID int, svcType loadbalancer.SVCType,
-	svcLocal bool, sessionAffinity bool, sessionAffinityTimeoutSec uint32,
-	checkSourceRange bool) error {
-
+func updateMasterService(
+	fe ServiceKey,
+	nbackends, revNATID int,
+	sessionAffinityTimeoutSec uint32,
+	flags loadbalancer.SvcFlagParam,
+) error {
 	fe.SetBackendSlot(0)
 	zeroValue := fe.NewValue().(ServiceValue)
 	zeroValue.SetCount(nbackends)
 	zeroValue.SetRevNat(revNATID)
-	flag := loadbalancer.NewSvcFlag(&loadbalancer.SvcFlagParam{
-		SvcType:          svcType,
-		SvcLocal:         svcLocal,
-		SessionAffinity:  sessionAffinity,
-		IsRoutable:       !fe.IsSurrogate(),
-		CheckSourceRange: checkSourceRange,
-	})
-	zeroValue.SetFlags(flag.UInt16())
-	if sessionAffinity {
+	zeroValue.SetFlags(loadbalancer.NewSvcFlag(&flags).UInt16())
+	if flags.SessionAffinity {
 		zeroValue.SetSessionAffinityTimeoutSec(sessionAffinityTimeoutSec)
 	}
 
