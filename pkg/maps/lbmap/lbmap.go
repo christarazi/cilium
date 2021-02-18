@@ -141,11 +141,14 @@ func (lbmap *LBBPFMap) UpsertService(p *UpsertServiceParams) error {
 		return fmt.Errorf("Unable to update reverse NAT %+v => %+v: %s", revNATKey, revNATValue, err)
 	}
 
+	// The caller of UpsertService() will provide non-zero value if Maglev is
+	// enabled, which then we pass down here to be plumbed into the map value.
 	if err := updateMasterService(
 		svcKey,
 		len(backendIDs),
 		int(p.ID),
 		p.SessionAffinityTimeoutSec,
+		uint32(p.MaglevTableSize),
 		loadbalancer.SvcFlagParam{
 			SvcType:          p.Type,
 			SvcLocal:         p.Local,
@@ -532,7 +535,7 @@ func (*LBBPFMap) IsMaglevLookupTableRecreated(ipv6 bool) bool {
 func updateMasterService(
 	fe ServiceKey,
 	nbackends, revNATID int,
-	sessionAffinityTimeoutSec uint32,
+	sessionAffinityTimeoutSec, maglevTableSize uint32,
 	flags loadbalancer.SvcFlagParam,
 ) error {
 	fe.SetBackendSlot(0)
@@ -542,6 +545,11 @@ func updateMasterService(
 	zeroValue.SetFlags(loadbalancer.NewSvcFlag(&flags).UInt16())
 	if flags.SessionAffinity {
 		zeroValue.SetSessionAffinityTimeoutSec(sessionAffinityTimeoutSec)
+	}
+	if maglevTableSize != 0 { // Non-zero means Mavlev is enabled.
+		// TODO(christarazi): we might need to change loadbalancer.BackendID to
+		// uint32
+		zeroValue.SetBackendID(loadbalancer.BackendID(maglevTableSize))
 	}
 
 	return updateServiceEndpoint(fe, zeroValue)
