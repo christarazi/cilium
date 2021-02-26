@@ -46,7 +46,10 @@ var (
 func InitMaglevMaps(ipv4 bool, ipv6 bool) error {
 	var err error
 
-	dummyInnerMap := newInnerMaglevMap("cilium_lb_maglev_dummy")
+	dummyInnerMap := newInnerMaglevMap(
+		"cilium_lb_maglev_dummy",
+		uint64(option.Config.MaglevTableSize),
+	)
 	if err := dummyInnerMap.CreateUnpinned(); err != nil {
 		return err
 	}
@@ -123,13 +126,15 @@ func deleteMapIfMNotMatch(mapName string) (bool, error) {
 	return deleteMap, nil
 }
 
-func newInnerMaglevMap(name string) *bpf.Map {
+func newInnerMaglevMap(name string, maxEntries uint64) *bpf.Map {
 	return bpf.NewMapWithOpts(
 		name,
 		bpf.MapTypeArray,
 		&MaglevInnerKey{}, int(unsafe.Sizeof(MaglevInnerKey{})),
-		&MaglevInnerVal{}, int(unsafe.Sizeof(uint16(0))*uintptr(option.Config.MaglevTableSize)),
-		1, 0, 0,
+		&MaglevInnerVal{}, int(unsafe.Sizeof(MaglevInnerVal{})),
+		(int(maxEntries)/4)+1, // TODO(christarazi): Move this calc somewhere else
+		4096,                  /*BPF_F_INNER_MAP*/ // TODO(christarazi): Create this constant
+		0,
 		bpf.ConvertKeyValue,
 		&bpf.NewMapOpts{},
 	)
@@ -147,7 +152,7 @@ func newOuterMaglevMap(name string, innerMap *bpf.Map) *bpf.Map {
 	).WithPressureMetric()
 }
 
-func updateMaglevTable(ipv6 bool, revNATID uint16, backendIDs []uint16) error {
+func updateMaglevTable(ipv6 bool, revNATID uint16, backendIDs []uint16, maxEntries uint64) error {
 	outerMap := MaglevOuter4Map
 	innerMapName := MaglevInner4MapName
 	if ipv6 {
@@ -155,16 +160,19 @@ func updateMaglevTable(ipv6 bool, revNATID uint16, backendIDs []uint16) error {
 		innerMapName = MaglevInner6MapName
 	}
 
-	innerMap := newInnerMaglevMap(innerMapName)
+	innerMap := newInnerMaglevMap(innerMapName, maxEntries)
 	if err := innerMap.CreateUnpinned(); err != nil {
 		return err
 	}
 	defer innerMap.Close()
 
-	innerKey := &MaglevInnerKey{Slot: 0}
-	innerVal := &MaglevInnerVal{BackendIDs: backendIDs}
-	if err := innerMap.Update(innerKey, innerVal); err != nil {
-		return err
+	// TODO(christarazi): Batch ops or mmap (BPF_F_MMAPABLE)
+	for i, s := range splitBackends(backendIDs) {
+		innerKey := &MaglevInnerKey{Slot: uint32(i)}
+		innerVal := &MaglevInnerVal{BackendIDs: s}
+		if err := innerMap.Update(innerKey, innerVal); err != nil {
+			return err
+		}
 	}
 
 	outerKey := (&MaglevOuterKey{RevNatID: revNATID}).ToNetwork()
@@ -190,6 +198,25 @@ func deleteMaglevTable(ipv6 bool, revNATID uint16) error {
 	return nil
 }
 
+// splitBackends splits the backends into chunks or slots so that they fit into
+// MaglevInnerVal.
+func splitBackends(b []uint16) [][4]uint16 {
+	const size = 4
+	var chunk [size]uint16
+	chunks := make([][size]uint16, 0, len(b)/size+1)
+	for len(b) >= size {
+		copy(chunk[:], b) // copies only min(len(chunk), len(b))
+		b = b[size:]
+		chunks = append(chunks, chunk)
+	}
+	if len(b) > 0 {
+		var last [size]uint16
+		copy(last[:], b[:len(b)])
+		chunks = append(chunks, last)
+	}
+	return chunks
+}
+
 // +k8s:deepcopy-gen=true
 // +k8s:deepcopy-gen:interfaces=github.com/cilium/cilium/pkg/bpf.MapKey
 type MaglevInnerKey struct{ Slot uint32 }
@@ -201,7 +228,7 @@ func (k *MaglevInnerKey) String() string            { return fmt.Sprintf("%d", k
 // +k8s:deepcopy-gen=true
 // +k8s:deepcopy-gen:interfaces=github.com/cilium/cilium/pkg/bpf.MapValue
 type MaglevInnerVal struct {
-	BackendIDs []uint16
+	BackendIDs [4]uint16
 }
 
 func (v *MaglevInnerVal) GetValuePtr() unsafe.Pointer { return unsafe.Pointer(&v.BackendIDs[0]) }

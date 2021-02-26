@@ -200,7 +200,7 @@ func (lbmap *LBBPFMap) UpsertMaglevLookupTable(svcID uint16, backends map[string
 	// (Service4MapV2Name). In there, it will be used during backend selection.
 	// In this function, M is used to fetch the LUT based on M.
 
-	if err := updateMaglevTable(ipv6, svcID, n); err != nil {
+	if err := updateMaglevTable(ipv6, svcID, n, m); err != nil {
 		return err
 	}
 
