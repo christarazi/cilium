@@ -161,7 +161,7 @@ func updateMaglevTable(ipv6 bool, revNATID uint16, backendIDs []uint16) error {
 	}
 	defer innerMap.Close()
 
-	innerKey := &MaglevInnerKey{Zero: 0}
+	innerKey := &MaglevInnerKey{Slot: 0}
 	innerVal := &MaglevInnerVal{BackendIDs: backendIDs}
 	if err := innerMap.Update(innerKey, innerVal); err != nil {
 		return err
@@ -192,11 +192,11 @@ func deleteMaglevTable(ipv6 bool, revNATID uint16) error {
 
 // +k8s:deepcopy-gen=true
 // +k8s:deepcopy-gen:interfaces=github.com/cilium/cilium/pkg/bpf.MapKey
-type MaglevInnerKey struct{ Zero uint32 }
+type MaglevInnerKey struct{ Slot uint32 }
 
 func (k *MaglevInnerKey) GetKeyPtr() unsafe.Pointer { return unsafe.Pointer(k) }
 func (k *MaglevInnerKey) NewValue() bpf.MapValue    { return &MaglevInnerVal{} }
-func (k *MaglevInnerKey) String() string            { return fmt.Sprintf("%d", k.Zero) }
+func (k *MaglevInnerKey) String() string            { return fmt.Sprintf("%d", k.Slot) }
 
 // +k8s:deepcopy-gen=true
 // +k8s:deepcopy-gen:interfaces=github.com/cilium/cilium/pkg/bpf.MapValue
