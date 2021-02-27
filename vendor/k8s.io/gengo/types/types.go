@@ -350,7 +350,8 @@ type Type struct {
 
 	// TODO: Add:
 	// * channel direction
-	// * array length
+
+	Len int64
 }
 
 // String returns the name of the type.
