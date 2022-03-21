@@ -375,7 +375,12 @@ func (r *Runtime) Submit(operation *runtime.ClientOperation) (interface{}, error
 	}
 
 	if auth == nil && r.DefaultAuthentication != nil {
-		auth = r.DefaultAuthentication
+		auth = runtime.ClientAuthInfoWriterFunc(func(req runtime.ClientRequest, reg strfmt.Registry) error {
+			if req.GetHeaderParams().Get(runtime.HeaderAuthorization) != "" {
+				return nil
+			}
+			return r.DefaultAuthentication.AuthenticateRequest(req, reg)
+		})
 	}
 	//if auth != nil {
 	//	if err := auth.AuthenticateRequest(request, r.Formats); err != nil {
@@ -450,17 +455,21 @@ func (r *Runtime) Submit(operation *runtime.ClientOperation) (interface{}, error
 	}
 	defer res.Body.Close()
 
+	ct := res.Header.Get(runtime.HeaderContentType)
+	if ct == "" { // this should really really never occur
+		ct = r.DefaultMediaType
+	}
+
 	if r.Debug {
-		b, err2 := httputil.DumpResponse(res, true)
+		printBody := true
+		if ct == runtime.DefaultMime {
+			printBody = false // Spare the terminal from a binary blob.
+		}
+		b, err2 := httputil.DumpResponse(res, printBody)
 		if err2 != nil {
 			return nil, err2
 		}
 		r.logger.Debugf("%s\n", string(b))
-	}
-
-	ct := res.Header.Get(runtime.HeaderContentType)
-	if ct == "" { // this should really really never occur
-		ct = r.DefaultMediaType
 	}
 
 	mt, _, err := mime.ParseMediaType(ct)
