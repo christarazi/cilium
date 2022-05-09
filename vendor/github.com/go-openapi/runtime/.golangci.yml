@@ -1,6 +1,7 @@
 linters-settings:
   govet:
-    check-shadowing: true
+    # Using err repeatedly considered as shadowing.
+    check-shadowing: false
   golint:
     min-confidence: 0
   gocyclo:
@@ -13,7 +14,6 @@ linters-settings:
     min-len: 2
     min-occurrences: 4
 linters:
-  enable-all: true
   disable:
     - maligned
     - lll
@@ -40,3 +40,5 @@ linters:
     - godot
     - errorlint
     - noctx
+    - interfacer
+    - nilerr
