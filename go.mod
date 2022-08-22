@@ -37,7 +37,7 @@ require (
 	github.com/go-openapi/runtime v0.19.26
 	github.com/go-openapi/spec v0.20.3
 	github.com/go-openapi/strfmt v0.20.0
-	github.com/go-openapi/swag v0.19.14
+	github.com/go-openapi/swag v0.22.3
 	github.com/go-openapi/validate v0.20.1
 	github.com/gogo/protobuf v1.3.2
 	github.com/golang/protobuf v1.4.3
@@ -74,7 +74,7 @@ require (
 	github.com/spf13/cobra v1.1.1
 	github.com/spf13/pflag v1.0.5
 	github.com/spf13/viper v1.7.1
-	github.com/stretchr/testify v1.7.0
+	github.com/stretchr/testify v1.8.0
 	github.com/vishvananda/netlink v1.1.1-0.20210324230033-66fce01bfa0e
 	github.com/vishvananda/netns v0.0.0-20201230012202-c4f3ca719c73
 	go.etcd.io/etcd v0.5.0-alpha.5.0.20201125193152-8a03d2e9614b
