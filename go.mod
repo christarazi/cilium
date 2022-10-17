@@ -10,7 +10,7 @@ require (
 	github.com/Azure/go-autorest/autorest/azure/auth v0.5.7
 	github.com/Azure/go-autorest/autorest/to v0.4.0
 	github.com/Azure/go-autorest/autorest/validation v0.2.0 // indirect
-	github.com/asaskevich/govalidator v0.0.0-20200907205600-7a23bdc65eef
+	github.com/asaskevich/govalidator v0.0.0-20210307081110-f21760c49a8d
 	github.com/aws/aws-sdk-go-v2 v1.2.1
 	github.com/aws/aws-sdk-go-v2/config v1.0.0
 	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.0.3
@@ -32,13 +32,13 @@ require (
 	github.com/docker/libnetwork v0.0.0-20190128195551-d8d4c8cf03d7
 	github.com/fsnotify/fsnotify v1.4.10-0.20200417215612-7f4cf4dd2b52
 	github.com/go-bindata/go-bindata/v3 v3.1.3
-	github.com/go-openapi/errors v0.19.9
-	github.com/go-openapi/loads v0.20.0
-	github.com/go-openapi/runtime v0.19.26
-	github.com/go-openapi/spec v0.20.3
-	github.com/go-openapi/strfmt v0.20.0
-	github.com/go-openapi/swag v0.19.14
-	github.com/go-openapi/validate v0.20.1
+	github.com/go-openapi/errors v0.20.2
+	github.com/go-openapi/loads v0.21.1
+	github.com/go-openapi/runtime v0.24.2
+	github.com/go-openapi/spec v0.20.4
+	github.com/go-openapi/strfmt v0.21.2
+	github.com/go-openapi/swag v0.21.1
+	github.com/go-openapi/validate v0.21.0
 	github.com/gogo/protobuf v1.3.2
 	github.com/golang/protobuf v1.4.3
 	github.com/google/go-cmp v0.5.4
@@ -80,9 +80,9 @@ require (
 	go.etcd.io/etcd v0.5.0-alpha.5.0.20201125193152-8a03d2e9614b
 	go.uber.org/goleak v1.1.10
 	golang.org/x/crypto v0.0.0-20210220033148-5ea612d1eb83
-	golang.org/x/net v0.0.0-20210224082022-3d97a244fca7
+	golang.org/x/net v0.0.0-20220127200216-cd36cc0744dd
 	golang.org/x/sync v0.0.0-20201207232520-09787c993a3a
-	golang.org/x/sys v0.0.0-20210225134936-a50acf3fe073
+	golang.org/x/sys v0.0.0-20211216021012-1d35b9e2eb4e
 	golang.org/x/time v0.0.0-20210220033141-f8bda1e9f3ba
 	golang.org/x/tools v0.1.0
 	golang.zx2c4.com/wireguard/wgctrl v0.0.0-20200609130330-bd2cb7843e1b
