@@ -4,8 +4,9 @@
 package identity
 
 import (
-	"fmt"
 	"net"
+	"strconv"
+	"strings"
 
 	"github.com/cilium/cilium/pkg/labels"
 )
@@ -143,6 +144,12 @@ func (pair *IPIdentityPair) IsHost() bool {
 // format w.x.y.z if 'host' is true, or as a prefix in the format the w.x.y.z/N
 // if 'host' is false.
 func (pair *IPIdentityPair) PrefixString() string {
+	ipstr := pair.IP.String()
+
+	var sb strings.Builder
+	sb.Grow(len(ipstr))
+	sb.WriteString(ipstr)
+
 	var suffix string
 	if !pair.IsHost() {
 		var ones int
@@ -155,9 +162,10 @@ func (pair *IPIdentityPair) PrefixString() string {
 		} else {
 			ones, _ = pair.Mask.Size()
 		}
-		suffix = fmt.Sprintf("/%d", ones)
+		suffix = "/" + strconv.Itoa(ones)
 	}
-	return fmt.Sprintf("%s%s", pair.IP.String(), suffix)
+	sb.WriteString(suffix)
+	return sb.String()
 }
 
 // RequiresGlobalIdentity returns true if the label combination requires a
