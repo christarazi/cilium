@@ -4,6 +4,7 @@
 package identity
 
 import (
+	"net"
 	"net/netip"
 	"testing"
 
@@ -232,6 +233,54 @@ func TestLookupReservedIdentityByLabels(t *testing.T) {
 			assert.NotNil(t, id)
 			assert.Equal(t, tt.want.id, id.ID)
 			assert.Equal(t, tt.want.labels, id.Labels)
+		})
+	}
+}
+
+func BenchmarkIPIdentityPair_PrefixString(b *testing.B) {
+	cases := []struct {
+		name string
+		pair *IPIdentityPair
+	}{
+		{
+			name: "is host",
+			pair: &IPIdentityPair{
+				IP:           net.ParseIP("10.1.128.15"),
+				Mask:         net.IPv4Mask(255, 255, 255, 255),
+				HostIP:       net.ParseIP("10.1.128.15"),
+				ID:           1,
+				Key:          3,
+				Metadata:     "metadata",
+				K8sNamespace: "kube-system",
+				K8sPodName:   "host",
+				NamedPorts: []NamedPort{
+					{Name: "port", Port: 8080, Protocol: "TCP"},
+				},
+			},
+		},
+		{
+			name: "not host",
+			pair: &IPIdentityPair{
+				IP:           net.ParseIP("10.1.128.15"),
+				HostIP:       net.ParseIP("10.1.128.15"),
+				ID:           1,
+				Key:          3,
+				Metadata:     "metadata",
+				K8sNamespace: "kube-system",
+				K8sPodName:   "host",
+				NamedPorts: []NamedPort{
+					{Name: "port", Port: 8080, Protocol: "TCP"},
+				},
+			},
+		},
+	}
+	b.ReportAllocs()
+	b.ResetTimer()
+	for _, tt := range cases {
+		b.Run(tt.name, func(bb *testing.B) {
+			for i := 0; i < bb.N; i++ {
+				_ = tt.pair.PrefixString()
+			}
 		})
 	}
 }
