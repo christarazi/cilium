@@ -6,7 +6,6 @@ package identity
 import (
 	"net"
 	"strconv"
-	"strings"
 
 	"github.com/cilium/cilium/pkg/labels"
 )
@@ -146,26 +145,21 @@ func (pair *IPIdentityPair) IsHost() bool {
 func (pair *IPIdentityPair) PrefixString() string {
 	ipstr := pair.IP.String()
 
-	var sb strings.Builder
-	sb.Grow(len(ipstr))
-	sb.WriteString(ipstr)
-
-	var suffix string
-	if !pair.IsHost() {
-		var ones int
-		if pair.Mask == nil {
-			if pair.IP.To4() != nil {
-				ones = net.IPv4len
-			} else {
-				ones = net.IPv6len
-			}
-		} else {
-			ones, _ = pair.Mask.Size()
-		}
-		suffix = "/" + strconv.Itoa(ones)
+	if pair.IsHost() && pair.Mask == nil {
+		return ipstr
 	}
-	sb.WriteString(suffix)
-	return sb.String()
+
+	var ones int
+	if pair.Mask == nil {
+		if pair.IP.To4() != nil {
+			ones = net.IPv4len
+		} else {
+			ones = net.IPv6len
+		}
+	} else {
+		ones, _ = pair.Mask.Size()
+	}
+	return ipstr + "/" + strconv.Itoa(ones)
 }
 
 // RequiresGlobalIdentity returns true if the label combination requires a
