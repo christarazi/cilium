@@ -145,20 +145,11 @@ func (pair *IPIdentityPair) IsHost() bool {
 func (pair *IPIdentityPair) PrefixString() string {
 	ipstr := pair.IP.String()
 
-	if pair.IsHost() && pair.Mask == nil {
+	if pair.Mask == nil {
 		return ipstr
 	}
 
-	var ones int
-	if pair.Mask == nil {
-		if pair.IP.To4() != nil {
-			ones = net.IPv4len
-		} else {
-			ones = net.IPv6len
-		}
-	} else {
-		ones, _ = pair.Mask.Size()
-	}
+	ones, _ := pair.Mask.Size()
 	return ipstr + "/" + strconv.Itoa(ones)
 }
 
