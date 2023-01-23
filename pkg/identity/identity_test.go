@@ -282,7 +282,7 @@ func TestIPIdentityPair_PrefixString(t *testing.T) {
 			},
 		},
 		{
-			name:     "IPv6 with mask",
+			name:     "IPv4 encoded as IPv6 with mask",
 			expected: "10.1.128.15/128",
 			pair: &IPIdentityPair{
 				IP:           net.ParseIP("::ffff:a01:800f"),
@@ -299,11 +299,44 @@ func TestIPIdentityPair_PrefixString(t *testing.T) {
 			},
 		},
 		{
-			name:     "IPv6 without mask",
+			name:     "IPv4 encoded as IPv6 without mask",
 			expected: "10.1.128.15",
 			pair: &IPIdentityPair{
 				IP:           net.ParseIP("::ffff:a01:800f"),
 				HostIP:       net.ParseIP("::ffff:a01:800f"),
+				ID:           1,
+				Key:          3,
+				Metadata:     "metadata",
+				K8sNamespace: "kube-system",
+				K8sPodName:   "host",
+				NamedPorts: []NamedPort{
+					{Name: "port", Port: 8080, Protocol: "TCP"},
+				},
+			},
+		},
+		{
+			name:     "IPv6 local with mask",
+			expected: "fd12:3456:789a:1::1/128",
+			pair: &IPIdentityPair{
+				IP:           net.ParseIP("fd12:3456:789a:1::1"),
+				Mask:         ipv6Mask,
+				HostIP:       net.ParseIP("fd12:3456:789a:1::1"),
+				ID:           1,
+				Key:          3,
+				Metadata:     "metadata",
+				K8sNamespace: "kube-system",
+				K8sPodName:   "host",
+				NamedPorts: []NamedPort{
+					{Name: "port", Port: 8080, Protocol: "TCP"},
+				},
+			},
+		},
+		{
+			name:     "IPv6 local without mask",
+			expected: "fd12:3456:789a:1::1",
+			pair: &IPIdentityPair{
+				IP:           net.ParseIP("fd12:3456:789a:1::1"),
+				HostIP:       net.ParseIP("fd12:3456:789a:1::1"),
 				ID:           1,
 				Key:          3,
 				Metadata:     "metadata",
