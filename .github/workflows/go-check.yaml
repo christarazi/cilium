@@ -15,7 +15,7 @@ jobs:
         with:
           go-version: 1.16.2
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
       - name: Check module vendoring
         run: |
           go mod tidy
@@ -31,7 +31,7 @@ jobs:
         with:
           go-version: 1.16.2
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
       - name: Run golangci-lint
         uses: golangci/golangci-lint-action@v2.5.1
         with:
@@ -46,7 +46,7 @@ jobs:
         with:
           go-version: 1.16.2
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           # hard-code the path instead of using ${{ github.repository }} to make sure it works for forked repo as well
           path: src/github.com/cilium/cilium
@@ -63,7 +63,7 @@ jobs:
         with:
           go-version: 1.16.2
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           # hard-code the path instead of using ${{ github.repository }} to make sure it works for forked repo as well
           path: src/github.com/cilium/cilium
@@ -80,7 +80,7 @@ jobs:
         with:
           go-version: 1.16.2
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           # hard-code the path instead of using ${{ github.repository }} to make sure it works for forked repo as well
           path: src/github.com/cilium/cilium
