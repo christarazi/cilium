@@ -40,8 +40,8 @@ require (
 	github.com/go-openapi/swag v0.19.14
 	github.com/go-openapi/validate v0.20.1
 	github.com/gogo/protobuf v1.3.2
-	github.com/golang/protobuf v1.4.3
-	github.com/google/go-cmp v0.5.4
+	github.com/golang/protobuf v1.5.3
+	github.com/google/go-cmp v0.5.9
 	github.com/google/gopacket v1.1.19
 	github.com/google/gops v0.3.17
 	github.com/google/renameio v1.0.0
@@ -58,8 +58,8 @@ require (
 	github.com/mattn/go-shellwords v1.0.10
 	github.com/miekg/dns v1.0.14
 	github.com/morikuni/aec v1.0.0 // indirect
-	github.com/onsi/ginkgo v1.12.1
-	github.com/onsi/gomega v1.10.5
+	github.com/onsi/ginkgo v1.16.4
+	github.com/onsi/gomega v1.27.6
 	github.com/opencontainers/go-digest v1.0.0-rc1 // indirect
 	github.com/opencontainers/image-spec v1.0.1 // indirect
 	github.com/optiopay/kafka v0.0.0-20171218140449-a1e0071f1ce8
@@ -79,16 +79,16 @@ require (
 	github.com/vishvananda/netns v0.0.0-20201230012202-c4f3ca719c73
 	go.etcd.io/etcd v0.5.0-alpha.5.0.20201125193152-8a03d2e9614b
 	go.uber.org/goleak v1.1.10
-	golang.org/x/crypto v0.0.0-20210220033148-5ea612d1eb83
-	golang.org/x/net v0.0.0-20210224082022-3d97a244fca7
-	golang.org/x/sync v0.0.0-20201207232520-09787c993a3a
-	golang.org/x/sys v0.0.0-20210225134936-a50acf3fe073
+	golang.org/x/crypto v0.1.0
+	golang.org/x/net v0.8.0
+	golang.org/x/sync v0.1.0
+	golang.org/x/sys v0.6.0
 	golang.org/x/time v0.0.0-20210220033141-f8bda1e9f3ba
-	golang.org/x/tools v0.1.0
+	golang.org/x/tools v0.7.0
 	golang.zx2c4.com/wireguard/wgctrl v0.0.0-20200609130330-bd2cb7843e1b
 	google.golang.org/genproto v0.0.0-20210126160654-44e461bb6506
 	google.golang.org/grpc v1.29.1
-	google.golang.org/protobuf v1.25.0
+	google.golang.org/protobuf v1.28.0
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c
 	gopkg.in/ini.v1 v1.62.0
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0
