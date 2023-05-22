@@ -124,6 +124,7 @@ func newPolicyTrifecta(params policyParams) (policyOut, error) {
 		CacheStatus:       params.CacheStatus,
 	})
 	idAlloc.ipcache = ipc
+	iao.policy.GetSelectorCache().SetIPCache(ipc)
 
 	params.Lifecycle.Append(hive.Hook{
 		OnStart: func(hc hive.HookContext) error {
@@ -376,10 +377,11 @@ func (d *Daemon) policyAdd(sourceRules policyAPI.Rules, opts *policy.AddOptions,
 		epsToBumpRevision: endpointsToBumpRevision,
 		endpointsToRegen:  endpointsToRegen,
 		newRev:            newRev,
-		upsertPrefixes:    prefixes,
-		releasePrefixes:   removedPrefixes,
-		source:            opts.Source,
-		resource:          opts.Resource,
+		// XXX: these are commented out for debugging
+		//upsertPrefixes:    prefixes,
+		//releasePrefixes:   removedPrefixes,
+		source:   opts.Source,
+		resource: opts.Resource,
 	}
 
 	ev := eventqueue.NewEvent(r)
