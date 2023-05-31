@@ -493,6 +493,16 @@ func (ipc *IPCache) UpsertPrefixes(prefixes []netip.Prefix, src source.Source, r
 	ipc.TriggerLabelInjection()
 }
 
+func (ipc *IPCache) UpsertPrefixesSynchronous(prefixes []netip.Prefix, src source.Source, resource ipcacheTypes.ResourceID) {
+	ipc.metadata.Lock()
+	for _, p := range prefixes {
+		ipc.metadata.upsertLocked(p, src, resource, cidr.GetCIDRLabels(p))
+		ipc.metadata.enqueuePrefixUpdates(p)
+	}
+	ipc.metadata.Unlock()
+	ipc.TriggerLabelInjectionAndWait()
+}
+
 // RemovePrefixes removes the association between the prefixes and the CIDR
 // labels corresponding to those prefixes.
 //
