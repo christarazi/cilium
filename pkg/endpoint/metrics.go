@@ -95,6 +95,7 @@ type policyRegenerationStatistics struct {
 	totalTime                  spanstat.SpanStat
 	waitingForIdentityCache    spanstat.SpanStat
 	waitingForPolicyRepository spanstat.SpanStat
+	policyPreparation          spanstat.SpanStat
 	policyCalculation          spanstat.SpanStat
 }
 

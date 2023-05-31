@@ -148,9 +148,8 @@ func (cache *PolicyCache) Lookup(identity *identityPkg.Identity) SelectorPolicy 
 //
 // The caller must provide threadsafety for iteration over the policy
 // repository.
-func (cache *PolicyCache) UpdatePolicy(identity *identityPkg.Identity) error {
-	_, err := cache.updateSelectorPolicy(identity)
-	return err
+func (cache *PolicyCache) UpdatePolicy(identity *identityPkg.Identity) (bool, error) {
+	return cache.updateSelectorPolicy(identity)
 }
 
 // cachedSelectorPolicy is a wrapper around a selectorPolicy (stored in the

@@ -588,6 +588,7 @@ func (e *Endpoint) regenerateBPF(regenContext *regenerationContext) (revnum uint
 	// below (runPreCompilationSteps()), but this caused a deadlock with the
 	// IPCache. Therefore, we obtain the DNSRules outside the critical section.
 	rules := e.owner.GetDNSRules(e.ID)
+	regenContext.policyUpdated, err = e.preparePolicyRecalculation(regenContext)
 	headerfileChanged, err = e.runPreCompilationSteps(regenContext, rules)
 
 	// Keep track of the side-effects of the regeneration that need to be
@@ -779,7 +780,7 @@ func (e *Endpoint) runPreCompilationSteps(regenContext *regenerationContext, rul
 	if option.Config.DryMode {
 
 		// Compute policy for this endpoint.
-		if err = e.regeneratePolicy(); err != nil {
+		if err = e.regeneratePolicy(regenContext); err != nil {
 			return false, fmt.Errorf("Unable to regenerate policy: %s", err)
 		}
 
@@ -820,7 +821,7 @@ func (e *Endpoint) runPreCompilationSteps(regenContext *regenerationContext, rul
 	// this endpoint.
 	if e.SecurityIdentity != nil {
 		stats.policyCalculation.Start()
-		err = e.regeneratePolicy()
+		err = e.regeneratePolicy(regenContext)
 		stats.policyCalculation.End(err == nil)
 		if err != nil {
 			return false, fmt.Errorf("unable to regenerate policy for '%s': %s", e.StringID(), err)

@@ -31,8 +31,10 @@ type regenerationContext struct {
 	datapathRegenerationContext *datapathRegenerationContext
 
 	parentContext context.Context
+	cancelFunc    context.CancelFunc
 
-	cancelFunc context.CancelFunc
+	policyUpdated         bool
+	currentPolicyRevision uint64
 }
 
 func ParseExternalRegenerationMetadata(ctx context.Context, c context.CancelFunc, e *regeneration.ExternalRegenerationMetadata) *regenerationContext {
