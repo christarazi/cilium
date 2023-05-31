@@ -204,7 +204,7 @@ type userNotification struct {
 }
 
 type ipcacheManager interface {
-	UpsertPrefixes(prefixes []netip.Prefix, src source.Source, resource ipcacheTypes.ResourceID)
+	UpsertPrefixesSynchronous(prefixes []netip.Prefix, src source.Source, resource ipcacheTypes.ResourceID)
 	RemovePrefixes(prefixes []netip.Prefix, src source.Source, resource ipcacheTypes.ResourceID)
 }
 
@@ -935,11 +935,22 @@ func (sc *SelectorCache) AddIdentitySelector(user CachedSelectionUser, selector 
 	prefixes := newIDSel.selectedCIDRs()
 	if len(prefixes) > 0 {
 		log.WithField("prefixes", prefixes).Debug("inserting CIDR selector prefixes ")
-		sc.ipcache.UpsertPrefixes(prefixes, source.Generated, sc.ipcacheResource(newIDSel.String()))
-	}
+		sc.mutex.Unlock()
+		sc.ipcache.UpsertPrefixesSynchronous(prefixes, source.Generated, sc.ipcacheResource(newIDSel.String()))
+		sc.mutex.Lock()
 
+		// Check whether the selectorCache was updated while 'newFQDNSel' was
+		// being registered without the 'sc.mutex'. If so, use it. Otherwise
+		// we can use the one we just created/configured above.
+		if sel, exists := sc.selectors[key]; exists {
+			newIDSel = sel.(*labelIdentitySelector)
+		} else {
+			sc.selectors[key] = newIDSel
+		}
+		newIDSel.updateSelections()
+	}
 	// Add the initial user
-	newIDSel.users[user] = struct{}{}
+	added = newIDSel.addUser(user)
 
 	// Find all matching identities from the identity cache.
 	for numericID, identity := range sc.idCache {
