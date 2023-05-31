@@ -561,19 +561,48 @@ func (ipc *IPCache) TriggerLabelInjection() {
 	ipc.UpdateController(
 		LabelInjectorName,
 		controller.ControllerParams{
+			Context:          ipc.Configuration.Context,
+			DoFunc:           ipc.doTriggerLabelInjection,
+			MaxRetryInterval: 1 * time.Minute,
+		},
+	)
+}
+
+// TriggerLabelInjectionAndWait is a synchronous variant of
+// TriggerLabelInjection().
+func (ipc *IPCache) TriggerLabelInjectionAndWait() {
+	var wg sync.WaitGroup
+	wg.Add(1)
+
+	// This controller is for retrying this operation in case it fails. It
+	// should eventually succeed.
+	ipc.UpdateController(
+		LabelInjectorName,
+		controller.ControllerParams{
 			Context: ipc.Configuration.Context,
 			DoFunc: func(ctx context.Context) error {
-				var err error
-
-				idsToModify := ipc.metadata.dequeuePrefixUpdates()
-				idsToModify, err = ipc.InjectLabels(ctx, idsToModify)
-				ipc.metadata.enqueuePrefixUpdates(idsToModify...)
+				err := ipc.doTriggerLabelInjection(ctx)
+				if err == nil {
+					wg.Done()
+				}
 
 				return err
 			},
 			MaxRetryInterval: 1 * time.Minute,
 		},
 	)
+	wg.Wait()
+	return
+}
+
+func (ipc *IPCache) doTriggerLabelInjection(ctx context.Context) error {
+	var err error
+
+	idsToModify := ipc.metadata.dequeuePrefixUpdates()
+	idsToModify, err = ipc.InjectLabels(ctx, idsToModify)
+	ipc.metadata.enqueuePrefixUpdates(idsToModify...)
+
+	return err
 }
 
 // ShutdownLabelInjection shuts down the controller in TriggerLabelInjection().
