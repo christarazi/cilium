@@ -8,22 +8,26 @@ import (
 	"context"
 	"encoding/json"
 	"net"
+	"net/netip"
 	"sort"
 	"strings"
 	"sync"
 	"sync/atomic"
+	"time"
 
 	"github.com/sirupsen/logrus"
 
 	"github.com/cilium/cilium/api/v1/models"
 	"github.com/cilium/cilium/pkg/identity"
 	"github.com/cilium/cilium/pkg/identity/cache"
+	ipcacheTypes "github.com/cilium/cilium/pkg/ipcache/types"
 	k8sConst "github.com/cilium/cilium/pkg/k8s/apis/cilium.io"
 	"github.com/cilium/cilium/pkg/labels"
 	"github.com/cilium/cilium/pkg/lock"
 	"github.com/cilium/cilium/pkg/logging/logfields"
 	"github.com/cilium/cilium/pkg/option"
 	"github.com/cilium/cilium/pkg/policy/api"
+	"github.com/cilium/cilium/pkg/source"
 )
 
 // CachedSelector represents an identity selector owned by the selector cache
@@ -154,6 +158,11 @@ type identitySelector interface {
 	// held when calling wg.Wait().
 	notifyUsers(sc *SelectorCache, added, deleted []identity.NumericIdentity, wg *sync.WaitGroup)
 
+	// selectedCIDRs should return the set of statically-selected cidrs, not
+	// dynamic (in the case of FQDN). These CIDRs will then be allocated
+	// in the ipcache.
+	selectedCIDRs() []netip.Prefix
+
 	numUsers() int
 }
 
@@ -195,6 +204,11 @@ type userNotification struct {
 	wg       *sync.WaitGroup
 }
 
+type ipcacheManager interface {
+	UpsertPrefixes(prefixes []netip.Prefix, src source.Source, resource ipcacheTypes.ResourceID)
+	RemovePrefixes(prefixes []netip.Prefix, src source.Source, resource ipcacheTypes.ResourceID)
+}
+
 // SelectorCache caches identities, identity selectors, and the
 // subsets of identities each selector selects.
 type SelectorCache struct {
@@ -203,6 +217,9 @@ type SelectorCache struct {
 	// idAllocator is used to allocate and release identities. It is used
 	// by the NameManager to manage identities corresponding to FQDNs.
 	idAllocator cache.IdentityAllocator
+
+	// ipcache is used to insert CIDRs in to the ipcache. (This will also allocate identities for them).
+	ipcache ipcacheManager
 
 	// idCache contains all known identities as informed by the
 	// kv-store and the local identity facility via our
@@ -306,6 +323,10 @@ func (sc *SelectorCache) SetLocalIdentityNotifier(pop identityNotifier) {
 	sc.localIdentityNotifier = pop
 }
 
+func (sc *SelectorCache) SetIPCache(ipc ipcacheManager) {
+	sc.ipcache = ipc
+}
+
 var (
 	// Empty slice of numeric identities used for all selectors that select nothing
 	emptySelection []identity.NumericIdentity
@@ -320,6 +341,19 @@ type selectorManager struct {
 	selections       atomic.Pointer[[]identity.NumericIdentity]
 	users            map[CachedSelectionUser]struct{}
 	cachedSelections map[identity.NumericIdentity]struct{}
+
+	// hasSelectionsCh is closed as soon as the cached selector includes
+	// the desired number of identities. This is used to block selector
+	// creation until the ipcache has allocated any identities and
+	// the selector has reacted to them.
+	hasSelectionsCh chan struct{}
+
+	// If waitingForSelections >0, close hasSelectionsCh when cachedSelections contains
+	// at least this many IDs. There isn't a good way to say exactly *which* identities
+	// we're waiting for, but since we don't actually support dynamic allocation of
+	// compound / complex identities, we don't sacrifice correctness.
+	// In reality, this number will never be > 1.
+	waitingForSelections int
 }
 
 // Equal is used by checker.Equals, and only considers the identity of the selector,
@@ -422,6 +456,11 @@ func (s *selectorManager) updateSelections() {
 		return selections[i] < selections[j]
 	})
 	s.setSelections(&selections)
+
+	if s.waitingForSelections > 0 && len(selections) >= s.waitingForSelections {
+		s.waitingForSelections = 0
+		close(s.hasSelectionsCh)
+	}
 }
 
 func (s *selectorManager) setSelections(selections *[]identity.NumericIdentity) {
@@ -545,6 +584,10 @@ func (f *fqdnSelector) fetchIdentityMappings() []identity.NumericIdentity {
 	return ids
 }
 
+func (f *fqdnSelector) selectedCIDRs() []netip.Prefix {
+	return nil
+}
+
 // releaseIdentityMappings must be called exactly once for each selector that
 // is removed from the selectorcache, in order to release local identity
 // references held in the selector's cachedSelections.
@@ -643,6 +686,10 @@ func (l *labelIdentitySelector) matches(identity scIdentity) bool {
 func (l *labelIdentitySelector) fetchIdentityMappings() []identity.NumericIdentity {
 	// labelIdentitySelectors don't retain identity references, so no-op.
 	return nil
+}
+
+func (l *labelIdentitySelector) selectedCIDRs() []netip.Prefix {
+	return api.CIDRSFromSelector(l.selector)
 }
 
 //
@@ -879,9 +926,9 @@ func (sc *SelectorCache) AddIdentitySelector(user CachedSelectionUser, selector 
 	// essentially two copies of the same selector.
 	key := selector.CachedString()
 	sc.mutex.Lock()
-	defer sc.mutex.Unlock()
 	idSel, exists := sc.selectors[key]
 	if exists {
+		sc.mutex.Unlock()
 		return idSel, idSel.addUser(user)
 	}
 
@@ -893,12 +940,22 @@ func (sc *SelectorCache) AddIdentitySelector(user CachedSelectionUser, selector 
 			key:              key,
 			users:            make(map[CachedSelectionUser]struct{}),
 			cachedSelections: make(map[identity.NumericIdentity]struct{}),
+
+			hasSelectionsCh: make(chan struct{}),
 		},
 		selector: selector,
 	}
 	// check is selector has a namespace match or requirement
 	if namespaces, ok := selector.GetMatch(labels.LabelSourceK8sKeyPrefix + k8sConst.PodNamespaceLabel); ok {
 		newIDSel.namespaces = namespaces
+	}
+
+	// Allocate identities for any CIDR selectors used here
+	prefixes := newIDSel.selectedCIDRs()
+	if len(prefixes) > 0 && sc.ipcache != nil { // only nil for unit tests
+		newIDSel.waitingForSelections = len(prefixes)
+		log.WithField("prefixes", prefixes).Debug("Upserting selector CIDRs in to the ipcache")
+		sc.ipcache.UpsertPrefixes(prefixes, source.Generated, sc.ipcacheResource(newIDSel.String()))
 	}
 
 	// Add the initial user
@@ -921,6 +978,28 @@ func (sc *SelectorCache) AddIdentitySelector(user CachedSelectionUser, selector 
 	// is already cached, or is a new one).
 
 	sc.selectors[key] = newIDSel
+	sc.mutex.Unlock()
+
+	// wait for IDs to be allocated (if required).
+	// Ideally we defer this and let the caller decide when to wait, but the call stack
+	// is just too deep to ergonomically do this.
+	// So, wait for a short period of time for the ipcache to converge and, if
+	// necessary, give up and proceed. It's okay to proceed, since the selectorCache
+	// will *eventually* be updated and everything will converge.
+	start := time.Now()
+	if newIDSel.waitingForSelections > 0 {
+		// Give ourselves a 5-second timeout, just out of paranoia.
+		// If the ipcache is somehow not making progress, we don't want
+		// to block progress. This is safe, because the updated selections
+		// will be pushed back down in to the policy maps anyways
+		select {
+		case <-newIDSel.hasSelectionsCh:
+			log.WithField("prefixes", prefixes).Debug("Wait time for CIDR prefix allocation: ", time.Since(start))
+		case <-time.After(5 * time.Second):
+			log.WithField("prefixes", prefixes).Warn("Timed out waiting for CachedSelector to be populated! Policy may be temporarily inconsistent")
+		}
+	}
+
 	return newIDSel, true
 }
 
@@ -931,6 +1010,11 @@ func (sc *SelectorCache) removeSelectorLocked(selector CachedSelector, user Cach
 	if exists {
 		if sel.removeUser(user, sc.localIdentityNotifier) {
 			delete(sc.selectors, key)
+			prefixes := sel.selectedCIDRs()
+			if len(prefixes) > 0 && sc.ipcache != nil { // only nil for unit tests
+				log.WithField("prefixes", prefixes).Debug("removing CIDR selector prefixes ")
+				sc.ipcache.RemovePrefixes(prefixes, source.Generated, sc.ipcacheResource(sel.String()))
+			}
 			identitiesToRelease = sel.fetchIdentityMappings()
 		}
 	}
@@ -1099,4 +1183,13 @@ func (sc *SelectorCache) GetLabels(id identity.NumericIdentity) labels.LabelArra
 		return labels.LabelArray{}
 	}
 	return ident.lbls
+}
+
+// ipcacheResource returns the resource that "owns" a given CIDR in the ipcache
+// metadata store.
+// It it used to track ownership, and thus should be unique per selector key.
+func (sc *SelectorCache) ipcacheResource(suffix string) ipcacheTypes.ResourceID {
+
+	// This currently assumes there is only one SelectorCache
+	return ipcacheTypes.ResourceID("selectorcache:" + suffix)
 }

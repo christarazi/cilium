@@ -235,6 +235,8 @@ func (e *Endpoint) regeneratePolicy() (retErr error) {
 
 	// Check to see that someone else didn't beat us to policy compilation.
 	// if so, then don't commit.
+	// In reality, this shouldn't happen since our only caller holds the compilation lock, but
+	// it's good to be paranoid.
 	if e.nextPolicyRevision > repoRevision ||
 		(!forcePolicyCompute && e.nextPolicyRevision == repoRevision) {
 		e.getLogger().WithFields(logrus.Fields{
