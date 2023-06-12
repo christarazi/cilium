@@ -446,6 +446,15 @@ func (r *PolicyReactionEvent) reactToRuleUpdates(epsToBumpRevision, epsToRegen *
 		RegenerationLevel: regeneration.RegenerateWithoutDatapath,
 	}
 	epsToRegen.ForEachGo(&enqueueWaitGroup, func(ep policy.Endpoint) {
+		id, err := ep.GetSecurityIdentity()
+		if err != nil {
+			panic(err)
+		}
+
+		if err := r.d.policy.GetPolicyCache().UpdatePolicy(id); err != nil {
+			panic(err)
+		}
+
 		if ep != nil {
 			switch e := ep.(type) {
 			case *endpoint.Endpoint:
