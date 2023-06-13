@@ -242,6 +242,14 @@ func (p *Repository) Start() {
 	p.RuleReactionQueue.Run()
 }
 
+// CalculatePolicy calculates policy for the given identity.
+func (p *Repository) CalculatePolicy(identity *identity.Identity) error {
+	p.Mutex.RLock()
+	defer p.Mutex.RUnlock()
+	p.policyCache.insert(identity)
+	return p.policyCache.UpdatePolicy(identity)
+}
+
 // ResolveL4IngressPolicy resolves the L4 ingress policy for a set of endpoints
 // by searching the policy repository for `PortRule` rules that are attached to
 // a `Rule` where the EndpointSelector matches `ctx.To`. `ctx.From` takes no effect and
