@@ -210,16 +210,27 @@ func (e *Endpoint) regeneratePolicy() (retErr error) {
 			repo.Mutex.RUnlock()
 			return err
 		}
+		err = repo.GetPolicyCache().UpdatePolicy(securityIdentity)
+		if err != nil {
+			e.getLogger().WithError(err).Warning("Failed to update policy")
+			repo.Mutex.RUnlock()
+			return err
+		}
+	} else if forcePolicyCompute {
+		// Only update policy if we are forced to.
+		//
+		// UpdatePolicy ensures the SelectorPolicy is fully resolved.
+		// Endpoint lock must not be held!
+		err = repo.CalculatePolicy(securityIdentity)
+		if err != nil {
+			e.getLogger().WithError(err).Warning("Failed to update policy")
+			repo.Mutex.RUnlock()
+			return err
+		}
+	} else {
+		e.getLogger().Info("Endpoint SelectorPolicy already computed for identity, skipping policy regeneration")
 	}
 
-	// UpdatePolicy ensures the SelectorPolicy is fully resolved.
-	// Endpoint lock must not be held!
-	err = repo.GetPolicyCache().UpdatePolicy(securityIdentity)
-	if err != nil {
-		e.getLogger().WithError(err).Warning("Failed to update policy")
-		repo.Mutex.RUnlock()
-		return err
-	}
 	// Consume converts a SelectorPolicy in to an EndpointPolicy
 	desiredPolicy := selectorPolicy.Consume(e)
 
